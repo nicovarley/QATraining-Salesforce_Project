@@ -73,19 +73,15 @@ private class TestCourseTriggerHandler {
 
         List<Event> evs = [SELECT Id, WhatId, OwnerId, WhoId, Subject, Location, StartDateTime, EndDateTime
         FROM Event];
-        Integer goodCount = 0;
-        Integer badCount = 0;
+        Integer count = 0;
         
         for (Event e : evs) {
             if (e.Location == 'TestLocation') {
-                goodCount++;
-            } else {
-                badCount++;
+                count++;
             }
         }
 
-        System.assertEquals(201, goodCount);
-        System.assertEquals(0, badCount);
+        System.assertEquals(201, count);
     }
 
     @isTest

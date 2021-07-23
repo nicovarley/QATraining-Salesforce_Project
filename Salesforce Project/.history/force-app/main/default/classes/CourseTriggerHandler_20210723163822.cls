@@ -1,4 +1,4 @@
-public class CourseTriggerHandler {
+public with sharing class CourseTriggerHandler {
 
     private List<Course__c> current;
     private Map<ID, Course__c> previous;
@@ -21,6 +21,19 @@ public class CourseTriggerHandler {
         private Datetime startDate;
         private Datetime endDate;
         private String description;
+
+        public BuildCalendarEvent(ID relatedTo, ID assignedTo, ID nameContact,
+        String subjectPicklist, String locationString, Datetime startDate,
+        Datetime endDate, String description) {
+            this.relatedTo = relatedTo;
+            this.assignedTo = assignedTo;
+            this.nameContact = nameContact;
+            this.subjectPicklist = subjectPicklist;
+            this.locationString = locationString;
+            this.startDate = startDate;
+            this.endDate = endDate;
+            this.description = description;
+        }
 
         public BuildCalendarEvent(ID relatedTo, ID assignedTo, ID nameContact,
         String subjectPicklist, String locationString, Datetime startDate,
@@ -77,19 +90,9 @@ public class CourseTriggerHandler {
             switch on i {
                 // Still Scheduled
                 when 0 {
-                    List<Event> events = [SELECT Id, WhatId, Location, StartDateTime, EndDateTime FROM Event WHERE WhatId IN :relevant.get(0).keySet()];
-                    String[] emailScheduled = new List<String>();
-
-                    for (Event e : events) {
-                        e.Location = relevant.get(0).get(e.WhatId).Location__c;
-                        e.StartDateTime = Datetime.newInstance(relevant.get(0).get(e.WhatId).Start_Date__c, Time.newInstance(9, 0, 0, 0));
-                        e.EndDateTime = Datetime.newInstance(relevant.get(0).get(e.WhatId).End_Date__c, Time.newInstance(17, 0, 0, 0));
+                    for (ID key : relevant.get(0).keySet()) {
+                        
                     }
-
-                    upsert events;
-                    EmailHandler email = new EmailHandler(emailScheduled, 'Scheduled Course Updated', 
-                    'A scheduled course has been updated successfully and its event has been automatically updated in your calendar. Check your SalesForce app!');
-                    email.send();
                 }
                 // Now scheduled
                 when 1 {

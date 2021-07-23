@@ -1,4 +1,4 @@
-public class CourseTriggerHandler {
+public with sharing class CourseTriggerHandler {
 
     private List<Course__c> current;
     private Map<ID, Course__c> previous;
@@ -7,9 +7,6 @@ public class CourseTriggerHandler {
     public CourseTriggerHandler(List<Course__c> newRecords, Map<ID, Course__c> oldRecords) {
         this.current = newRecords;
         this.previous = oldRecords;
-        this.relevant.put(0, new Map<ID, Course__c>());
-        this.relevant.put(1, new Map<ID, Course__c>());
-        this.relevant.put(2, new Map<ID ,Course__c>());
     }
 
     private class BuildCalendarEvent {
@@ -20,7 +17,7 @@ public class CourseTriggerHandler {
         private String locationString;
         private Datetime startDate;
         private Datetime endDate;
-        private String description;
+        private String descritpion;
 
         public BuildCalendarEvent(ID relatedTo, ID assignedTo, ID nameContact,
         String subjectPicklist, String locationString, Datetime startDate,
@@ -43,95 +40,74 @@ public class CourseTriggerHandler {
     }
 
     public void afterUpdate() {
-        findCourses();
+        findRelevantCourses();
         if (relevant != null) {
-            processCourses();
+            processRelevantCourses();
         }
     }
 
-    private void findCourses() {
+    private void findRelevantCourses() {
+        //Not the most elegant solution, can't spend more time thinking of how to make a more scalable approach atm (will have to add more maps for more switches)
+        Map<ID, Course__c> becameScheduled = new Map<ID, Course__c>();
+        Map<ID, Course__c> becameCancelled = new Map<ID, Course__c>();
+
         for (Course__c c : current) {
             if (previous.keySet().contains(c.Id)) {
                 switch on c.Stage__c {
                     when 'Scheduled' {
-                        if (previous.get(c.Id).Stage__c != 'Scheduled') {
-                            relevant.get(1).put(c.Id, c);
-                        } else {
-                            if (!(c === previous.get(c.Id))) {
-                                relevant.get(0).put(c.Id, c);
-                            }
+                        if (previous.get(c.Id).Stage__c == 'Proposed') {
+                            becameScheduled.put(c.Id, c);
                         }
                     }
                     when 'Cancelled' {
                         if (previous.get(c.Id).Stage__c == 'Scheduled' || previous.get(c.Id).Stage__c == 'Proposed') {
-                            relevant.get(2).put(c.Id, c);
+                            becameCancelled.put(c.Id, c);
                         }
                     }
                 }
             }
         }
+        if (becameScheduled.keySet().size() > 0) {
+            relevant.put(1, becameScheduled);
+        }
+        if (becameCancelled.keySet().size() > 0) {
+            relevant.put(2, becameCancelled);
+        }
     }
 
-    private void processCourses() {
+    private void processRelevantCourses() {
         for (Integer i : relevant.keySet()) {
             switch on i {
-                // Still Scheduled
-                when 0 {
-                    List<Event> events = [SELECT Id, WhatId, Location, StartDateTime, EndDateTime FROM Event WHERE WhatId IN :relevant.get(0).keySet()];
-                    String[] emailScheduled = new List<String>();
-
-                    for (Event e : events) {
-                        e.Location = relevant.get(0).get(e.WhatId).Location__c;
-                        e.StartDateTime = Datetime.newInstance(relevant.get(0).get(e.WhatId).Start_Date__c, Time.newInstance(9, 0, 0, 0));
-                        e.EndDateTime = Datetime.newInstance(relevant.get(0).get(e.WhatId).End_Date__c, Time.newInstance(17, 0, 0, 0));
-                    }
-
-                    upsert events;
-                    EmailHandler email = new EmailHandler(emailScheduled, 'Scheduled Course Updated', 
-                    'A scheduled course has been updated successfully and its event has been automatically updated in your calendar. Check your SalesForce app!');
-                    email.send();
-                }
                 // Now scheduled
                 when 1 {
                     List<Event> events = new List<Event>();
                     String[] emailScheduled = new List<String>();
 
                     for (ID key : relevant.get(1).keySet()) {
-                        BuildCalendarEvent buildEvent = new BuildCalendarEvent(relevant.get(1).get(key).Id,
+                        BuildCalendarEvent buildEvent = new BuildCalendarEvent(relevant.get(1).get(key).Account__c,
                         relevant.get(1).get(key).Instructor_User__c, relevant.get(1).get(key).Contact__c,
                         'Teaching', relevant.get(1).get(key).Location__c, Datetime.newInstance(relevant.get(1).get(key).
                         Start_Date__c, Time.newInstance(9, 0, 0, 0)), Datetime.newInstance(relevant.get(1).get(key).
-                        End_Date__c, Time.newInstance(17, 0, 0, 0)), 'Auto-generated event for the scheduled course: ' + 
-                        relevant.get(1).get(key).Id);
+                        End_Date__c, Time.newInstance(17, 0, 0, 0)));
 
                         Event newRecord = buildEvent.newEvent();
                         events.add(newRecord);
-
-                        if (relevant.get(1).get(key).Email__c != null) {
-                            emailScheduled.add(relevant.get(1).get(key).Email__c);
-                        }
+                        // Need to populate the email too.
+                        emailScheduled.add(relevant.get(1).get(key).Instructor_User__r.Email);
                     }
-                    upsert events;
+                    insert events;
                     EmailHandler email = new EmailHandler(emailScheduled, 'New Course Scheduled', 
                     'Your new course has been scheduled successfully and an event has been automatically added to your calendar. Check your SalesForce app!');
                     email.send();
                 }
                 // Now cancelled
                 when 2 {
-                    List<Event> events = [SELECT Id FROM Event WHERE WhatId IN :relevant.get(2).keySet()];
+                    List<Event> events = new List<Event>();
                     String[] emailCancelled = new String[]{};
 
                     for (ID key : relevant.get(2).keySet()) {
-                        if (relevant.get(2).get(key).Email__c != null) {
-                            emailCancelled.add(relevant.get(2).get(key).Email__c);
-                        }
+
                     }
-
-                    delete events;
-
-                    EmailHandler email = new EmailHandler(emailCancelled, 'Course Cancelled', 
-                    'A course has been cancelled and its event has been automatically deleted from your calendar.');
-                    email.send();
                 }
             }
         }

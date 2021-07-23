@@ -77,7 +77,7 @@ public class CourseTriggerHandler {
             switch on i {
                 // Still Scheduled
                 when 0 {
-                    List<Event> events = [SELECT Id, WhatId, Location, StartDateTime, EndDateTime FROM Event WHERE WhatId IN :relevant.get(0).keySet()];
+                    List<Event> events = [SELECT Id FROM Event WHERE WhatId IN :relevant.get(0).keySet()];
                     String[] emailScheduled = new List<String>();
 
                     for (Event e : events) {

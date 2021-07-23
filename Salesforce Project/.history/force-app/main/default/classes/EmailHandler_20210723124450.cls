@@ -16,13 +16,6 @@ global class EmailHandler {
         email.setSubject(emailSubject);
         email.setPlainTextBody(emailBody);
 
-        try {
-            Messaging.sendEmail(new Messaging.SingleEmailMessage[]{email});
-        } catch (EmailException e) {
-            if (e.getMessage().contains('Add a recipient to send an email')) {
-                System.debug('Exception Handled: Found no email recipients.');
-            }
-            System.debug(e.getMessage());
-        }
+        Messaging.sendEmail(new Messaging.SingleEmailMessage[]{email});
     }
 }

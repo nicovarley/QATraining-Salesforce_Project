@@ -1,15 +1,15 @@
-public class CourseTriggerHandler {
+public with sharing class CourseTriggerHandler {
 
     private List<Course__c> current;
     private Map<ID, Course__c> previous;
     private Map<Integer, Map<ID, Course__c>> relevant = new Map<Integer, Map<ID, Course__c>>();
+    public static Integer count = 0;
 
     public CourseTriggerHandler(List<Course__c> newRecords, Map<ID, Course__c> oldRecords) {
         this.current = newRecords;
         this.previous = oldRecords;
-        this.relevant.put(0, new Map<ID, Course__c>());
         this.relevant.put(1, new Map<ID, Course__c>());
-        this.relevant.put(2, new Map<ID ,Course__c>());
+        this.relevant.put(2, new Map<Id,Course__c>());
     }
 
     private class BuildCalendarEvent {
@@ -43,23 +43,21 @@ public class CourseTriggerHandler {
     }
 
     public void afterUpdate() {
-        findCourses();
+        System.debug(count);
+        dount++;
+        findRelevantCourses();
         if (relevant != null) {
-            processCourses();
+            processRelevantCourses();
         }
     }
 
-    private void findCourses() {
+    private void findRelevantCourses() {
         for (Course__c c : current) {
             if (previous.keySet().contains(c.Id)) {
                 switch on c.Stage__c {
                     when 'Scheduled' {
-                        if (previous.get(c.Id).Stage__c != 'Scheduled') {
+                        if (previous.get(c.Id).Stage__c == 'Proposed') {
                             relevant.get(1).put(c.Id, c);
-                        } else {
-                            if (!(c === previous.get(c.Id))) {
-                                relevant.get(0).put(c.Id, c);
-                            }
                         }
                     }
                     when 'Cancelled' {
@@ -72,25 +70,9 @@ public class CourseTriggerHandler {
         }
     }
 
-    private void processCourses() {
+    private void processRelevantCourses() {
         for (Integer i : relevant.keySet()) {
             switch on i {
-                // Still Scheduled
-                when 0 {
-                    List<Event> events = [SELECT Id, WhatId, Location, StartDateTime, EndDateTime FROM Event WHERE WhatId IN :relevant.get(0).keySet()];
-                    String[] emailScheduled = new List<String>();
-
-                    for (Event e : events) {
-                        e.Location = relevant.get(0).get(e.WhatId).Location__c;
-                        e.StartDateTime = Datetime.newInstance(relevant.get(0).get(e.WhatId).Start_Date__c, Time.newInstance(9, 0, 0, 0));
-                        e.EndDateTime = Datetime.newInstance(relevant.get(0).get(e.WhatId).End_Date__c, Time.newInstance(17, 0, 0, 0));
-                    }
-
-                    upsert events;
-                    EmailHandler email = new EmailHandler(emailScheduled, 'Scheduled Course Updated', 
-                    'A scheduled course has been updated successfully and its event has been automatically updated in your calendar. Check your SalesForce app!');
-                    email.send();
-                }
                 // Now scheduled
                 when 1 {
                     List<Event> events = new List<Event>();
@@ -111,14 +93,14 @@ public class CourseTriggerHandler {
                             emailScheduled.add(relevant.get(1).get(key).Email__c);
                         }
                     }
-                    upsert events;
+                    insert events;
                     EmailHandler email = new EmailHandler(emailScheduled, 'New Course Scheduled', 
                     'Your new course has been scheduled successfully and an event has been automatically added to your calendar. Check your SalesForce app!');
                     email.send();
                 }
                 // Now cancelled
                 when 2 {
-                    List<Event> events = [SELECT Id FROM Event WHERE WhatId IN :relevant.get(2).keySet()];
+                    List<Event> events = [SELECT Id, WhatId, WhoId, StartDateTime, EndDateTime FROM Event WHERE WhatId IN :relevant.get(2).keySet()];
                     String[] emailCancelled = new String[]{};
 
                     for (ID key : relevant.get(2).keySet()) {

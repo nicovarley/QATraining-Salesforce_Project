@@ -42,7 +42,7 @@ private class TestCourseTriggerHandler {
         Course__c course = [SELECT ID, Stage__c, Contact__c, Account__c FROM Course__c WHERE Stage__c = 'Proposed'][0];
         course.Stage__c = 'Scheduled';
         upsert course;
-        course.Location__c = 'TestLocation';
+        course.Location__c = 'Huddersfield';
         upsert course;
         Test.stopTest();
 
@@ -52,40 +52,13 @@ private class TestCourseTriggerHandler {
         System.assertEquals(1, [SELECT count() FROM Event]);
         System.assertEquals(ev.WhoId, course.Contact__c);
         System.assert(ev.WhatId == course.Id);
-
-        System.assertEquals('TestLocation', ev.Location);
+        
+        System.assertEquals('Huddersfield', ev.Location);
     }
 
     @isTest
     static void testUpdatedBulk() {
-        Test.startTest();
-        List<Course__c> courses = [SELECT ID, Stage__c, Contact__c, Account__c FROM Course__c WHERE Stage__c = 'Proposed'];
-        for (Course__c c : courses) {
-            c.Stage__c = 'Scheduled';
-        }
-        upsert courses;
 
-        for (Course__c c : courses) {
-            c.Location__c = 'TestLocation';
-        }
-        upsert courses;
-        Test.stopTest();
-
-        List<Event> evs = [SELECT Id, WhatId, OwnerId, WhoId, Subject, Location, StartDateTime, EndDateTime
-        FROM Event];
-        Integer goodCount = 0;
-        Integer badCount = 0;
-        
-        for (Event e : evs) {
-            if (e.Location == 'TestLocation') {
-                goodCount++;
-            } else {
-                badCount++;
-            }
-        }
-
-        System.assertEquals(201, goodCount);
-        System.assertEquals(0, badCount);
     }
 
     @isTest
