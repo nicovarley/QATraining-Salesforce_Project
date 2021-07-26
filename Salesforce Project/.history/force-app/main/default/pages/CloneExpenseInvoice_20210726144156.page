@@ -1,0 +1,11 @@
+<apex:page standardController="Expense_Invoice__c" lightningStylesheets="true" extensions="CloneExpenseInvoiceExtension">
+    <apex:form>
+        <apex:pageBlock title="Your Previous Expense Invoices">
+            <apex:pageMessages />
+            <apex:pageBlockTable var="inv" value="{!expenseInvoices}" >
+                <apex:column value="{!inv.Name}"/>
+                <apex:c
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+    </apex:form>
+</apex:page>

@@ -1,0 +1,19 @@
+<apex:page standardController="Expense_Invoice__c" lightningStylesheets="true" extensions="CloneExpenseInvoiceExtension" showQuickActionVfHeader="false">
+    <apex:form>
+        <apex:pageBlock title="Your Previous Expense Invoices">
+            <apex:pageMessages />
+            <apex:pageBlockTable var="wrapper" value="{!expenseInvoices}" >
+                <apex:column width="25px" headerValue="Select">
+                    <apex:inputCheckbox value="{!wrapper.checked}" />
+                </apex:column>
+                <apex:column value="{!wrapper.invoice.Name}"/>
+                <apex:column value="{!wrapper.invoice.Total_Item_Amount__c}"/>
+                <apex:column value="{!wrapper.invoice.Cumulative_Invoice__r.Course__r.Location__c}"/>
+                <apex:column headervalue="Items" value="{!wrapper.items}"/>
+            </apex:pageBlockTable>
+        </apex:pageBlock>
+        <di
+            <apex:commandButton value="Clone" action="{!cloneInvoiceItems}"/>
+            <apex:commandButton value="Close" action="{!cancel}"/> 
+    </apex:form>
+</apex:page>
