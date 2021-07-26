@@ -21,7 +21,6 @@ private class TestCourseTriggerHandler {
         System.assertEquals(1, [SELECT count() FROM Event]);
         System.assertEquals(ev.WhoId, course.Contact__c);
         System.assert(ev.WhatId == course.Id);
-        System.assertEquals(1, [SELECT count() FROM Invoice__c]);
     }
 
     @isTest
@@ -100,7 +99,6 @@ private class TestCourseTriggerHandler {
         Test.stopTest();
 
         System.assertEquals(0, [SELECT count() FROM Event]);
-        System.assertEquals(0, [SELECT count() FROM Invoice__c]);
     }
 
     @isTest
@@ -132,7 +130,6 @@ private class TestCourseTriggerHandler {
         Test.stopTest();
 
         System.assertEquals(1, [SELECT count() FROM Invoice__c]);
-        System.assertEquals(1, [SELECT count() FROM Service_Invoice__c]);
     }
 
     @isTest
@@ -151,6 +148,5 @@ private class TestCourseTriggerHandler {
         Test.stopTest();
 
         System.assertEquals(201, [SELECT count() FROM Invoice__c]);
-        System.assertEquals(201, [SELECT count() FROM Service_Invoice__c]);
     }
 }

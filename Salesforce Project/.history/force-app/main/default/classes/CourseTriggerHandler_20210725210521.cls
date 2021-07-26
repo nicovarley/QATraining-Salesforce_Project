@@ -106,7 +106,6 @@ public class CourseTriggerHandler {
             processCourses();
         }
         addRecords();
-        deleteRecords();
     }
 
     private void findCourses() {
@@ -201,7 +200,7 @@ public class CourseTriggerHandler {
                 }
                 // Now completed
                 when 3 {
-                    List<Invoice__c> invoices = [SELECT Id, Course__c FROM Invoice__c WHERE Course__c IN :relevant.get(3).keySet()];
+                    List<Invoice__c> invoices = [SELECT Id FROM Invoice__c WHERE Course__c IN :relevant.get(3).keySet()];
 
                     for (Invoice__c inv : invoices) {
                         BuildServiceInvoice buildInvoice = new BuildServiceInvoice(inv.Id);
@@ -210,6 +209,12 @@ public class CourseTriggerHandler {
 
                         inv.Connected_Service_Invoice__c = newInvoice.Id;
                         invoicesToUpsert.add(inv);
+
+                        for (Integer j = 0; j < relevant.get(3).get(inv.Course__c).Start_Date__c.daysBetween(relevant.get(3).get(inv.Course__c).End_Date__c); j++) {
+                            BuildServiceItem buildItem = new BuildServiceItem(newInvoice.Id, 8, relevant.get(3).get(inv.Course__c).Start_Date__c.addDays(j));
+                            Service_Invoice_Item__c newItem = buildItem.newServiceItem();
+                            itemsToUpsert.add(newItem);
+                        }
                     }
                 }
             }
@@ -223,23 +228,10 @@ public class CourseTriggerHandler {
         if (invoicesToUpsert.size() > 0) {
             upsert invoicesToUpsert;
         }
-        System.debug(servicesToUpsert.size());
         if (servicesToUpsert.size() > 0) {
             upsert servicesToUpsert;
-            List<Invoice__c> invoices = [SELECT Id, Course__c, Connected_Service_Invoice__c FROM Invoice__c WHERE Connected_Service_Invoice__c IN :servicesToUpsert];
-
-            for (Invoice__c inv : invoices) {
-                for (Integer i = 0; i < relevant.get(3).get(inv.Course__c).Start_Date__c.daysBetween(relevant.get(3).get(inv.Course__c).End_Date__c); i++) {
-                    System.debug(inv.Connected_Service_Invoice__c);
-                    BuildServiceItem buildItem = new BuildServiceItem(inv.Connected_Service_Invoice__c, 8, relevant.get(3).get(inv.Course__c).Start_Date__c.addDays(i));
-                    Service_Invoice_Item__c newItem = buildItem.newServiceItem();
-                    itemsToUpsert.add(newItem);
-                }
-            }
         }
         if (itemsToUpsert.size() > 0) {
-            System.debug(itemsToUpsert[0]);
-            System.debug(itemsToUpsert[0].Service_Invoice__c);
             upsert itemsToUpsert;
         }
     }

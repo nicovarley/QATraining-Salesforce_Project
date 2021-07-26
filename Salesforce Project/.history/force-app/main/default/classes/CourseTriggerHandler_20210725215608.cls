@@ -210,6 +210,12 @@ public class CourseTriggerHandler {
 
                         inv.Connected_Service_Invoice__c = newInvoice.Id;
                         invoicesToUpsert.add(inv);
+
+                        for (Integer j = 0; j < relevant.get(3).get(inv.Course__c).Start_Date__c.daysBetween(relevant.get(3).get(inv.Course__c).End_Date__c); j++) {
+                            BuildServiceItem buildItem = new BuildServiceItem(newInvoice.Id, 8, relevant.get(3).get(inv.Course__c).Start_Date__c.addDays(j));
+                            Service_Invoice_Item__c newItem = buildItem.newServiceItem();
+                            itemsToUpsert.add(newItem);
+                        }
                     }
                 }
             }

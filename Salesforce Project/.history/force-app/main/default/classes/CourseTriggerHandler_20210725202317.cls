@@ -4,12 +4,8 @@ public class CourseTriggerHandler {
     private Map<ID, Course__c> previous;
     private Map<Integer, Map<ID, Course__c>> relevant = new Map<Integer, Map<ID, Course__c>>();
 
-    private List<Event> eventsToUpsert = new List<Event>();
-    private List<Event> eventsToDelete = new List<Event>();
-    private List<Invoice__c> invoicesToUpsert = new List<Invoice__c>();
-    private List<Invoice__c> invoicesToDelete = new List<Invoice__c>();
-    private List<Service_Invoice__c> servicesToUpsert = new List<Service_Invoice__c>();
-    private List<Service_Invoice_Item__c> itemsToUpsert = new List<Service_Invoice_Item__c>();
+    private List<sObject> recordsToUpsert = new List<sObject>();
+    private List<sObject> recordsToDelete = new List<sObject>();
 
     public CourseTriggerHandler(List<Course__c> newRecords, Map<ID, Course__c> oldRecords) {
         this.current = newRecords;
@@ -62,8 +58,17 @@ public class CourseTriggerHandler {
             this.status = 'Draft';
         }
 
+        BuildMasterInvoice(ID masterID, ID serviceID) {
+            this.thisID = masterID;
+            this.serviceID = serviceID;
+        }
+
         public Invoice__c newMasterInvoice() {
             return new Invoice__c(Course__c = course, Status__c = status);
+        }
+
+        public Invoice__c updateMasterInvoice() {
+            return new Invoice__c(ID = thisID, Connected_Service_Invoice__c = serviceID);
         }
     }
 
@@ -106,7 +111,6 @@ public class CourseTriggerHandler {
             processCourses();
         }
         addRecords();
-        deleteRecords();
     }
 
     private void findCourses() {
@@ -149,7 +153,7 @@ public class CourseTriggerHandler {
                         e.Location = relevant.get(0).get(e.WhatId).Location__c;
                         e.StartDateTime = Datetime.newInstance(relevant.get(0).get(e.WhatId).Start_Date__c, Time.newInstance(9, 0, 0, 0));
                         e.EndDateTime = Datetime.newInstance(relevant.get(0).get(e.WhatId).End_Date__c, Time.newInstance(17, 0, 0, 0));
-                        eventsToUpsert.add(e);
+                        recordsToUpsert.add(e);
                     }
                     EmailHandler email = new EmailHandler(emailScheduled, 'Scheduled Course Updated', 
                     'A scheduled course has been updated successfully and its event has been automatically updated in your calendar. Check your SalesForce app!');
@@ -168,11 +172,12 @@ public class CourseTriggerHandler {
                         relevant.get(1).get(key).Id);
 
                         Event newRecord = buildEvent.newEvent();
-                        eventsToUpsert.add(newRecord);
+                        recordsToUpsert.add(newRecord);
 
                         BuildMasterInvoice buildInvoice = new BuildMasterInvoice(relevant.get(1).get(key).Id);
+
                         Invoice__c newInvoice = buildInvoice.newMasterInvoice();
-                        invoicesToUpsert.add(newInvoice);
+                        recordsToUpsert.add(newInvoice);
 
                         if (relevant.get(1).get(key).Email__c != null) {
                             emailScheduled.add(relevant.get(1).get(key).Email__c);
@@ -185,31 +190,35 @@ public class CourseTriggerHandler {
                 // Now cancelled
                 when 2 {
                     List<Event> events = [SELECT Id FROM Event WHERE WhatId IN :relevant.get(2).keySet()];
-                    List<Invoice__c> invoices = [SELECT Id FROM Invoice__c WHERE Course__c IN :relevant.get(2).keySet()];
                     String[] emailCancelled = new String[]{};
 
                     for (ID key : relevant.get(2).keySet()) {
                         if (relevant.get(2).get(key).Email__c != null) {
                             emailCancelled.add(relevant.get(2).get(key).Email__c);
                         }
+                        recordsToDelete.add(relevant.get(2).get(key));
                     }
                     EmailHandler email = new EmailHandler(emailCancelled, 'Course Cancelled', 
                     'A course has been cancelled and its event has been automatically deleted from your calendar.');
                     email.send();
-                    invoicesToDelete.addAll(invoices);
-                    eventsToDelete.addAll(events);
                 }
                 // Now completed
                 when 3 {
-                    List<Invoice__c> invoices = [SELECT Id, Course__c FROM Invoice__c WHERE Course__c IN :relevant.get(3).keySet()];
-
-                    for (Invoice__c inv : invoices) {
-                        BuildServiceInvoice buildInvoice = new BuildServiceInvoice(inv.Id);
+                    for (ID key : relevant.get(3).keySet()) {
+                        // create service invoice, then populate line items by the relevant.get(3).get(key)'s start and end dates. I'll assume a standard 9-5.
+                        BuildServiceInvoice buildInvoice = new BuildServiceInvoice(relevant.get(3).get(key).Invoice__c);
                         Service_Invoice__c newInvoice = buildInvoice.newServiceInvoice();
-                        servicesToUpsert.add(newInvoice);
+                        recordsToUpsert.add(newInvoice);
 
-                        inv.Connected_Service_Invoice__c = newInvoice.Id;
-                        invoicesToUpsert.add(inv);
+                        BuildMasterInvoice masterInvoice = new BuildMasterInvoice(relevant.get(3).get(key).Invoice__c, newInvoice.Id);
+                        Invoice__c updatedMaster = masterInvoice.updateMasterInvoice();
+                        recordsToUpsert.add(updatedMaster);
+
+                        for (Integer j = 0; j < relevant.get(3).get(key).Start_Date__c.daysBetween(relevant.get(3).get(key).End_Date__c); j++) {
+                            BuildServiceItem buildItem = new BuildServiceItem(newInvoice.Id, 8, relevant.get(3).get(key).Start_Date__c.addDays(j));
+                            Service_Invoice_Item__c newItem = buildItem.newServiceItem();
+                            recordsToUpsert.add(newItem);
+                        }
                     }
                 }
             }
@@ -217,39 +226,11 @@ public class CourseTriggerHandler {
     }
 
     private void addRecords() {
-        if (eventsToUpsert.size() > 0) {
-            upsert eventsToUpsert;
+        if (recordsToUpsert.size() > 0) {
+            upsert recordsToUpsert;
         }
-        if (invoicesToUpsert.size() > 0) {
-            upsert invoicesToUpsert;
-        }
-        System.debug(servicesToUpsert.size());
-        if (servicesToUpsert.size() > 0) {
-            upsert servicesToUpsert;
-            List<Invoice__c> invoices = [SELECT Id, Course__c, Connected_Service_Invoice__c FROM Invoice__c WHERE Connected_Service_Invoice__c IN :servicesToUpsert];
-
-            for (Invoice__c inv : invoices) {
-                for (Integer i = 0; i < relevant.get(3).get(inv.Course__c).Start_Date__c.daysBetween(relevant.get(3).get(inv.Course__c).End_Date__c); i++) {
-                    System.debug(inv.Connected_Service_Invoice__c);
-                    BuildServiceItem buildItem = new BuildServiceItem(inv.Connected_Service_Invoice__c, 8, relevant.get(3).get(inv.Course__c).Start_Date__c.addDays(i));
-                    Service_Invoice_Item__c newItem = buildItem.newServiceItem();
-                    itemsToUpsert.add(newItem);
-                }
-            }
-        }
-        if (itemsToUpsert.size() > 0) {
-            System.debug(itemsToUpsert[0]);
-            System.debug(itemsToUpsert[0].Service_Invoice__c);
-            upsert itemsToUpsert;
-        }
-    }
-
-    private void deleteRecords() {
-        if (eventsToDelete.size() > 0) {
-            delete eventsToDelete;
-        }
-        if (invoicesToDelete.size() > 0) {
-            delete invoicesToDelete;
+        if (recordsToDelete.size() > 0) {
+            delete recordsToDelete;
         }
     }
 }
