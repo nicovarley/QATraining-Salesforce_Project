@@ -1,0 +1,5 @@
+<apex:page standardController="Service_Invoice__c" recordSetVar="Services" renderAs="PDF">
+<apex:pageBlock title="Service Invoice">
+    <apex:detail subject="{!Service_Invoice__c.Id}"/>
+</apex:pageBlock>
+</apex:page>

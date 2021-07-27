@@ -1,0 +1,17 @@
+<apex:page standardController="Service_Invoice__c" recordSetVar="record" renderAs="PDF">
+<apex:pageBlock title="Service Invoice">
+    <apex:detail subject="{!record}"/>
+    
+    <apex:pageBlockSection title="Items">
+        <apex:pageBlockTable var="item" value="{!record.Service_Invoice_Items__r}">
+            <apex:column value="{!item.Name}"/>
+            <apex:column value="{!item.Hours__c}"/>
+            <apex:column value="{!item.Amount__c}"/>
+            <apex:column value="{!item.VAT__c}"/>
+            <apex:column value="{!item.Total__c}"/>
+            <apex:column value="{!item.Date__c}"/>
+            <apex:column value="{!item.Paid__c}"/>
+        </apex:pageBlockTable>
+    </apex:pageBlockSection>
+</apex:pageBlock>
+</apex:page>

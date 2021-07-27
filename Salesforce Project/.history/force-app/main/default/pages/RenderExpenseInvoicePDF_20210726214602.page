@@ -1,0 +1,3 @@
+<apex:page standardController="Expense_Invoice__c" renderAs="PDF">
+    <apex:pageBlock title="Expense Invoice"
+</apex:page>

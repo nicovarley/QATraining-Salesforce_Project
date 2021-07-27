@@ -1,0 +1,5 @@
+<apex:page renderAs="PDF">
+<apex:pageBlock title="Service Invoic">
+    <detail
+</apex:pageBlock>
+</apex:page>

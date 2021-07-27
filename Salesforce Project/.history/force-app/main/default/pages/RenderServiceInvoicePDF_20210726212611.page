@@ -1,0 +1,31 @@
+<apex:page standardController="Service_Invoice__c" renderAs="PDF">
+<apex:pageBlock title="Service Invoice">
+    <apex:pageBlockSection columns="1"> 
+        <apex:outputField value="{!Service_Invoice__c.Cumulative_Invoice__c}"/>
+        </apex:outputField>
+        <apex:outputField value="{!Service_Invoice__c.Name}"/>
+    </apex:outputField>
+
+        <apex:outputField value="{!Service_Invoice__c.Status__c"/>
+    </apex:outputField>
+
+        <apex:outputField value="{!Service_Invoice__c.Total_Item_Amount__c"/>
+    </apex:outputField>
+        <apex:outputField value="{!Service_Invoice__c.Total_Item_VAT__c"/>
+    </apex:outputField>
+        <apex:outputField value="{!Service_Invoice__c.Total_Item_Total__c"/>
+    </apex:pageBlockSection>
+    
+    <apex:pageBlockSection title="Items">
+        <apex:pageBlockTable var="item" value="{!Service_Invoice__c.Service_Invoice_Items__r}">
+            <apex:column value="{!item.Name}"/>
+            <apex:column value="{!item.Hours__c}"/>
+            <apex:column value="{!item.Amount__c}"/>
+            <apex:column value="{!item.VAT__c}"/>
+            <apex:column value="{!item.Total__c}"/>
+            <apex:column value="{!item.Date__c}"/>
+            <apex:column value="{!item.Paid__c}"/>
+        </apex:pageBlockTable>
+    </apex:pageBlockSection>
+</apex:pageBlock>
+</apex:page>

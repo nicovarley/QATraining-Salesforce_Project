@@ -1,0 +1,16 @@
+<apex:page standardController="Expense_Invoice__c" renderAs="PDF">
+    <apex:pageBlock title="Expense Invoice">
+        <apex:pageBlockSection>
+            <apex:outputField value="{!Expense_Invoice__c.Cumulative_Invoice__c}" />
+            <apex:outputField value="{!Expense_Invoice__c.Name}" />
+        </apex:pageBlockSection>
+        <apex:pageBlockSection>
+            <apex:outputField value="{!Expense_Invoice__c.Status" />
+        </apex:pageBlockSection>
+        <apex:pageBlockSection>
+            <apex:outputField value="{!Expense_Invoice__c.Total_Item_Amount__c}" />
+            
+    
+                
+    </apex:pageBlock>
+</apex:page>
