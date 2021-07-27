@@ -1,0 +1,27 @@
+<apex:page standardController="Expense_Invoice__c" renderAs="PDF">
+    <apex:pageBlock>
+        <apex:pageBlockSection title="Expense Invoice" columns="1">
+            <apex:outputField label="Master Invoice" value="{!Expense_Invoice__c.Cumulative_Invoice__c}" />
+            <apex:outputField label="Invoice Name" value="{!Expense_Invoice__c.Name}" />
+            <br/>
+            <apex:outputField value="{!Expense_Invoice__c.Status__c}" />
+            <br/>
+            <apex:outputField label="Amount" value="{!Expense_Invoice__c.Total_Item_Amount__c}" />
+            <apex:outputField label="VAT" value="{!Expense_Invoice__c.Total_Item_VAT__c}" />
+            <apex:outputField label="Invoice Name" value="{!Expense_Invoice__c.Total_Item_Total__c}" />
+        </apex:pageBlockSection>
+        <br/>
+        <apex:pageBlockSection title="Items">
+            <apex:pageBlockTable var="item" value="{!Expense_Invoice__c.Expense_Invoice_Items__r}">
+                <apex:column headerValue="Item Number" value="{!item.Name}" width="200" />
+                <apex:column value="{!item.Category__c}" width="200"/>
+                <apex:column value="{!item.Amount__c}" width="200"/>
+                <apex:column value="{!item.VAT__c}" width="200"/>
+                <apex:column value="{!item.Total__c}" width="200"/>
+                <apex:column value="{!item.Date__c}" width="200"/>
+                <apex:column value="{!item.Paid__c}" width="200"/>
+            </apex:pageBlockTable>
+        </apex:pageBlockSection>
+
+    </apex:pageBlock>
+</apex:page>
