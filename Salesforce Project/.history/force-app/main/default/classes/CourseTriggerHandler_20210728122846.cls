@@ -30,6 +30,7 @@ public class CourseTriggerHandler {
     private void findCourses() {
         for (Course__c c : current) {
             if (previous.keySet().contains(c.Id)) {
+                
                 switch on c.Stage__c {
                     when 'Scheduled' {
                         if (previous.get(c.Id).Stage__c != 'Scheduled') {
@@ -126,7 +127,7 @@ public class CourseTriggerHandler {
 
                     for (Service_Invoice__c ser : services) {
                         invoices.get(ser.Cumulative_Invoice__c).Connected_Service_Invoice__c = ser.Id;
-                        
+
                         Service_Invoice_Item__c item = new Service_Invoice_Item__c(Service_Invoice__c = ser.Id, Hours__c = 8, Date__c = 
                         relevant.get(3).get(invoices.get(ser.Cumulative_Invoice__c).Course__c).Start_Date__c);
                         items.add(item);

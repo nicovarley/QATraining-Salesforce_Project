@@ -126,11 +126,11 @@ public class CourseTriggerHandler {
 
                     for (Service_Invoice__c ser : services) {
                         invoices.get(ser.Cumulative_Invoice__c).Connected_Service_Invoice__c = ser.Id;
-                        
+
                         Service_Invoice_Item__c item = new Service_Invoice_Item__c(Service_Invoice__c = ser.Id, Hours__c = 8, Date__c = 
                         relevant.get(3).get(invoices.get(ser.Cumulative_Invoice__c).Course__c).Start_Date__c);
                         items.add(item);
-
+                        
                         for (Integer i = 1; i < (relevant.get(3).get(invoices.get(ser.Cumulative_Invoice__c).Course__c)
                         .Start_Date__c.daysBetween(relevant.get(3).get(invoices.get(ser.Cumulative_Invoice__c).Course__c).End_Date__c) + 1); i++) {
                             Service_Invoice_Item__c cloneItem = item.clone(false);
